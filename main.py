@@ -88,6 +88,7 @@ class Video(Resource):
 		video = VideoModel.query.get(video_id)
 		if not video:
 			abort(404, message="Video doesn't exist, cannot delete")
+			
 
         # Move the deleted video to the DeletedVideoModel
 		deleted_video = DeletedVideoModel(
