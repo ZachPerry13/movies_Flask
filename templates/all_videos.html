@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Videos</title>
+</head>
+<body>
+    <h2>All Videos</h2>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Views</th>
+            <th>Likes</th>
+        </tr>
+        {% for video in videos %}
+            <tr>
+                <td>{{ video.id }}</td>
+                <td>{{ video.name }}</td>
+                <td>{{ video.views }}</td>
+                <td>{{ video.likes }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

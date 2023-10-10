@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>Movie API Client</title>
+</head>
+<body>
+    <div class="container mt-5">
+    <h2>Welcome to the Movie App!</h2>
+    <p>Click the link below to view all videos:</p>
+    <a href="{{ url_for('all_videos') }}">All Videos</a>
+    <br><br/>
+    <p>Click the link below to add videos:</p>
+    <a href="{{ url_for('add_video_form') }}">Add Videos</a>
+    </div>
+</body>
+</html>
