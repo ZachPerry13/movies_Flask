@@ -1,0 +1,1 @@
+Work in progress, run main.py to spin up flask server (frontend and backend/api)
