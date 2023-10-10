@@ -1,20 +1,32 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, current_app
 from flask_restful import Api, Resource, reqparse, abort, fields, marshal_with
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 api = Api(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_BINDS'] = {'deleted_db': 'sqlite:///deleted_db.db'}
 db = SQLAlchemy(app)
 
-class VideoModel(db.Model):
-	id = db.Column(db.Integer, primary_key=True)
-	name = db.Column(db.String(100), nullable=False)
-	views = db.Column(db.Integer, nullable=False)
-	likes = db.Column(db.Integer, nullable=False)
+class DeletedVideoModel(db.Model):
+    __bind_key__ = 'deleted_db'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    views = db.Column(db.Integer, nullable=False)
+    likes = db.Column(db.Integer, nullable=False)
 
-	def __repr__(self):
-		return f"Video(name = {name}, views = {views}, likes = {likes})"
+    def __repr__(self):
+        return f"DeletedVideo(name={self.name}, views={self.views}, likes={self.likes})"
+
+
+class VideoModel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    views = db.Column(db.Integer, nullable=False)
+    likes = db.Column(db.Integer, nullable=False)
+
+    def __repr__(self):
+        return f"Video(name={self.name}, views={self.views}, likes={self.likes})"
 
 video_put_args = reqparse.RequestParser()
 video_put_args.add_argument("name", type=str, help="Name of the video is required", required=True)
@@ -73,27 +85,53 @@ class Video(Resource):
 
 
 	def delete(self, video_id):
-		abort_if_video_id_doesnt_exist(video_id)
-		del videos[video_id]
+		video = VideoModel.query.get(video_id)
+		if not video:
+			abort(404, message="Video doesn't exist, cannot delete")
+
+        # Move the deleted video to the DeletedVideoModel
+		deleted_video = DeletedVideoModel(
+            name=video.name,
+            views=video.views,
+            likes=video.likes
+        )
+
+        # Use the existing db.session for the deleted_db
+		db.session.add(deleted_video)
+		db.session.commit()
+
+        # Delete the video from the original database
+		db.session.delete(video)
+		db.session.commit()
+
 		return '', 204
+
 
 
 api.add_resource(Video, "/video/<int:video_id>")
 
-# Add a new route to handle movie addition
-@app.route('/video', methods=['POST'])
-@marshal_with(resource_fields)
 
-def add_movie():
-    args = video_put_args.parse_args()
-    video = VideoModel(name=args['name'], views=args['views'], likes=args['likes'])
-    db.session.add(video)
-    db.session.commit()
-    return (video, resource_fields), 201
+# Add a new route to handle movie addition
+@app.route('/video', methods=['GET', 'POST'])
+def handle_video():
+    if request.method == 'GET':
+        # Handle GET request (e.g., display a form)
+        return render_template('your_get_template.html')
+    elif request.method == 'POST':
+        # Handle POST request (e.g., add a new video)
+        args = video_put_args.parse_args()
+        video = VideoModel(name=args['name'], views=args['views'], likes=args['likes'])
+        db.session.add(video)
+        db.session.commit()
+        return render_template('your_post_template.html', video=video)
 
 @app.route('/')
 def home():
     return render_template('index.html')
+
+@app.route('/delete_video_form')
+def delete_video_form():
+    return render_template('delete_video.html')
 
 @app.route('/add_video_form')
 def add_video_form():
@@ -103,6 +141,11 @@ def add_video_form():
 def all_videos():
     videos = VideoModel.query.all()
     return render_template('all_videos.html', videos=videos)
+
+@app.route('/deleted_videos')
+def deleted_videos():
+    videos = DeletedVideoModel.query.all()
+    return render_template('deleted_videos.html', videos=videos)
 
 
 if __name__ == "__main__":
