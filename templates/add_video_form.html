@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <title>Movie API Client</title>
+    <div id="feedback"></div>
 </head>
 <body>
     <div class="container mt-5">
@@ -12,6 +13,7 @@
         <p>Click the link below to view all videos:</p>
         <a href="{{ url_for('all_videos') }}">All Videos</a>
         <h2>Add Movie to DB</h2>
+        <div id="feedback"></div>
         <form id="addMovieForm">
             <div class="form-group">
                 <label for="name">ID:</label>
@@ -33,23 +35,27 @@
         </form>
     </div>
 
-<script>
+    <script>
         function addMovie() {
             const name = document.getElementById('name').value;
             const views = document.getElementById('views').value;
             const likes = document.getElementById('likes').value;
             const videoID = document.getElementById('ID').value;
-    
+        
             // Ensure views and likes are sent as integers
             const formData = {
                 name: name,
                 views: parseInt(views, 10), // base 10
                 likes: parseInt(likes, 10), // base 10
             };
+        
             // Construct the URL with the dynamic videoID
             console.log(videoID);
             const apiUrl = `/video/${videoID}`;
-            
+        
+            // Get the element where you want to display the feedback
+            const feedbackElement = document.getElementById('feedback');
+        
             // You can use fetch to make a POST request to your Flask API
             fetch(apiUrl, {
                 method: 'PUT',
@@ -61,14 +67,31 @@
             .then(response => response.json())
             .then(data => {
                 console.log('Success:', data);
-                // You can handle success, e.g., show a success message to the user
+        
+                // Check if the movie was added successfully or already exists
+                if (data.id) {
+                    // Movie added successfully
+                    feedbackElement.innerHTML = '<div class="alert alert-success" role="alert">Movie added successfully!</div>';
+                } else {
+                    // Movie already exists
+                    feedbackElement.innerHTML = '<div class="alert alert-warning" role="alert">Movie already exists!</div>';
+                }
+        
+                // Reset the form fields
+                document.getElementById('name').value = '';
+                document.getElementById('views').value = '';
+                document.getElementById('likes').value = '';
+                document.getElementById('ID').value = '';
             })
             .catch((error) => {
                 console.error('Error:', error);
                 // Handle error, show an error message to the user
+                feedbackElement.innerHTML = '<div class="alert alert-danger" role="alert">Error adding movie. Please try again.</div>';
             });
         }
-</script>
+        </script>
+        
+        
     
     
 </body>
