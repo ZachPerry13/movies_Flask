@@ -7,3 +7,9 @@ docker-compose down
 
 docker image prune --all
 docker system prune -af
+
+
+#TO REBUILD ON SERVER
+docker-compose down
+docker build -t myflaskapp .
+docker-compose up
