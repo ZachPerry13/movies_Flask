@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, current_app, jsonify, make_response
 from flask_restful import Api, Resource, reqparse, abort, fields, marshal_with
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 api = Api(app)
@@ -17,8 +18,7 @@ class DeletedVideoModel(db.Model):
 
     def __repr__(self):
         return f"DeletedVideo(name={self.name}, views={self.views}, likes={self.likes})"
-
-
+    
 class VideoModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -27,6 +27,7 @@ class VideoModel(db.Model):
 
     def __repr__(self):
         return f"Video(name={self.name}, views={self.views}, likes={self.likes})"
+
 
 video_put_args = reqparse.RequestParser()
 video_put_args.add_argument("name", type=str, help="Name of the video is required", required=True)
@@ -110,6 +111,7 @@ class Video(Resource):
 
 
 
+
 api.add_resource(Video, "/video/<int:video_id>")
 
 
@@ -149,6 +151,54 @@ def deleted_videos():
     videos = DeletedVideoModel.query.all()
     return render_template('deleted_videos.html', videos=videos)
 
+# Route to get all videos
+@app.route('/api/videos', methods=['GET'])
+def get_all_videos():
+    videos = VideoModel.query.all()
+    video_list = [{'id': video.id, 'name': video.name, 'views': video.views, 'likes': video.likes} for video in videos]
+    return jsonify(video_list)
+
+# Route to add a new video
+@app.route('/api/videos', methods=['POST'])
+def add_video():
+    try:
+        data = request.json
+
+        if data is None:
+            return jsonify({'error': 'Missing JSON data in the request body'}), 400
+
+        required_fields = ['id', 'name', 'likes', 'views']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+
+        video_data = {
+            'id': int(data['id']),
+            'name': data['name'],
+            'likes': int(data['likes']),
+            'views': int(data['views'])
+        }
+        # Create a new VideoModel object and add it to the database
+        new_video = VideoModel(**video_data)
+        db.session.add(new_video)
+        db.session.commit()
+
+        return jsonify({'message': 'Video added successfully'}), 201
+
+    except IntegrityError as e:
+        # Handle unique constraint violation
+        db.session.rollback()  # Rollback the transaction to avoid leaving the database in an inconsistent state
+        return jsonify({'error': 'Provided ID is not unique'}), 409  # HTTP status code 409 for conflict
+
+    except Exception as e:
+        return jsonify({'error': f'Error processing the request: {str(e)}'}), 500
+    
+# Route to get all deleted videos
+@app.route('/api/deleted_videos', methods=['GET'])
+def get_all_deleted_videos():
+    videos = DeletedVideoModel.query.all()
+    video_list = [{'id': video.id, 'name': video.name, 'views': video.views, 'likes': video.likes} for video in videos]
+    return jsonify(video_list)
 
 if __name__ == "__main__":
 	app.run(debug=True,host="0.0.0.0", port=5000)

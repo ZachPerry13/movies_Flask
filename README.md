@@ -13,3 +13,4 @@ docker system prune -af
 docker-compose down
 docker build -t myflaskapp .
 docker-compose up
+
