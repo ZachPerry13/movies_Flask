@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <title>Movie API Client</title>
+    <div id="deleteFeedback"></div>
 </head>
 <body>
     <div class="container mt-5">
@@ -12,43 +13,45 @@
         <p>Click the link below to view all videos:</p>
         <a href="{{ url_for('all_videos') }}">All Videos</a>
         <h2>Remove Movie from DB</h2>
-        <form id="addMovieForm">
+        <form id="deleteMovieForm">
             <div class="form-group">
                 <label for="name">ID:</label>
-                <input type="text" class="form-control" id="ID" required>
+                <input type="text" class="form-control" id="deleteID" required>
+            </div>
+            <button type="button" class="btn btn-danger" onclick="deleteMovie()">Delete Movie</button>
+        </form>
     </div>
-    <button type="button" class="btn btn-primary" onclick="deleteMovie()">Delete Movie</button>
-</form>
 
-<script>
+    <script>
         function deleteMovie() {
-            
-            const videoID = document.getElementById('ID').value;
-    
-            // Construct the URL with the dynamic videoID
-            console.log(videoID);
+            const videoID = document.getElementById('deleteID').value;
             const apiUrl = `/video/${videoID}`;
-            
-            // You can use fetch to make a POST request to your Flask API
+            const deleteFeedbackElement = document.getElementById('deleteFeedback');
+
             fetch(apiUrl, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-               
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Movie not found or other error');
+                }
+            })
             .then(data => {
                 console.log('Success:', data);
-                // You can handle success, e.g., show a success message to the user
+                // Display success message
+                deleteFeedbackElement.innerHTML = '<div class="alert alert-success" role="alert">Movie deleted successfully!</div>';
             })
-            .catch((error) => {
+            .catch(error => {
                 console.error('Error:', error);
-                // Handle error, show an error message to the user
+                // Display error message
+                deleteFeedbackElement.innerHTML = '<div class="alert alert-danger" role="alert">Error deleting movie. Please check the ID and try again.</div>';
             });
         }
-</script>
-    
-    
+    </script>
 </body>
 </html>

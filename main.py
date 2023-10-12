@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, current_app
+from flask import Flask, render_template, request, current_app, jsonify, make_response
 from flask_restful import Api, Resource, reqparse, abort, fields, marshal_with
 from flask_sqlalchemy import SQLAlchemy
 
@@ -85,27 +85,28 @@ class Video(Resource):
 
 
 	def delete(self, video_id):
-		video = VideoModel.query.get(video_id)
-		if not video:
-			abort(404, message="Video doesn't exist, cannot delete")
-			
+			video = VideoModel.query.get(video_id)
+			if not video:
+				error_message = {'error': 'Video not found'}
+				return make_response(jsonify(error_message), 404)
 
-        # Move the deleted video to the DeletedVideoModel
-		deleted_video = DeletedVideoModel(
-            name=video.name,
-            views=video.views,
-            likes=video.likes
-        )
+			# Move the deleted video to the DeletedVideoModel
+			deleted_video = DeletedVideoModel(
+				name=video.name,
+				views=video.views,
+				likes=video.likes
+			)
 
-        # Use the existing db.session for the deleted_db
-		db.session.add(deleted_video)
-		db.session.commit()
+			# Use the existing db.session for the deleted_db
+			db.session.add(deleted_video)
+			db.session.commit()
 
-        # Delete the video from the original database
-		db.session.delete(video)
-		db.session.commit()
+			# Delete the video from the original database
+			db.session.delete(video)
+			db.session.commit()
 
-		return '', 204
+			success_message = {'message': 'Video deleted successfully', 'id': video.id}
+			return make_response(jsonify(success_message), 200)
 
 
 
