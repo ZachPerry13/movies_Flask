@@ -1,13 +1,35 @@
-from flask import Flask, render_template, request, current_app, jsonify, make_response
+from flask import Flask, render_template, request, jsonify, make_response, redirect, url_for, flash, session
 from flask_restful import Api, Resource, reqparse, abort, fields, marshal_with
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
+from flask_bcrypt import Bcrypt
+
 
 app = Flask(__name__)
 api = Api(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_BINDS'] = {'deleted_db': 'sqlite:///deleted_db.db'}
+app.secret_key = 'vfsdwef2ef2fsdFdFSSFSEFef22f23432432rdfsdfasefwef'
 db = SQLAlchemy(app)
+
+@app.before_request
+def require_login():
+    allowed_routes = ['login', 'register', 'home', 'static']  # Add 'home' and 'static' to the allowed routes
+
+    if request.endpoint not in allowed_routes and 'user_id' not in session:
+        flash('You need to log in first.', 'danger')
+        return redirect(url_for('login'))
+
+bcrypt = Bcrypt(app)
+def hash_password(password):
+    return bcrypt.generate_password_hash(password).decode('utf-8')
+
+# Add the User model
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(20), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(60), nullable=False)
 
 class DeletedVideoModel(db.Model):
     __bind_key__ = 'deleted_db'
@@ -199,6 +221,68 @@ def get_all_deleted_videos():
     videos = DeletedVideoModel.query.all()
     video_list = [{'id': video.id, 'name': video.name, 'views': video.views, 'likes': video.likes} for video in videos]
     return jsonify(video_list)
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'GET':
+        # If it's a GET request, render the registration form
+        return render_template('register.html')
+    elif request.method == 'POST':
+        try:
+            # Get user data from the request
+            data = request.form
+
+            # Check if request.form is None
+            if not data:
+                flash('Missing form data in the request body', 'danger')
+                return redirect(url_for('register'))
+
+            # Validate the presence of required fields
+            required_fields = ['username', 'email', 'password']
+            for field in required_fields:
+                if field not in data:
+                    flash(f'Missing required field: {field}', 'danger')
+                    return redirect(url_for('register'))
+
+            # Hash the password (you may use your preferred method for this)
+            hashed_password = hash_password(data['password'])
+
+            # Create a new User object
+            new_user = User(username=data['username'], email=data['email'], password=hashed_password)
+
+            # Add the user to the database
+            db.session.add(new_user)
+            db.session.commit()
+
+            flash('User registered successfully. You can now log in.', 'success')
+            return redirect(url_for('login'))
+
+        except IntegrityError as e:
+            # Handle unique constraint violation (email already exists)
+            db.session.rollback()  # Rollback the transaction to avoid leaving the database in an inconsistent state
+            flash('Email is already in use. Please choose a different email.', 'danger')
+            return redirect(url_for('register'))
+
+        except Exception as e:
+            flash(f'Error processing the request: {str(e)}', 'danger')
+            return redirect(url_for('register'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        user = User.query.filter_by(email=email).first()
+
+        if user and bcrypt.check_password_hash(user.password, password):
+            session['user_id'] = user.id  # Store user_id in the session
+            flash('Login successful!', 'success')
+            return redirect(url_for('home'))
+        else:
+            flash('Login unsuccessful. Please check your email and password.', 'danger')
+
+    return render_template('login.html')
 
 if __name__ == "__main__":
 	app.run(debug=True,host="0.0.0.0", port=5000)
