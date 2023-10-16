@@ -16,9 +16,12 @@ db = SQLAlchemy(app)
 def require_login():
     allowed_routes = ['login', 'register', 'home', 'static']  # Add 'home' and 'static' to the allowed routes
 
+    # Exclude the flash message for GET requests
     if request.endpoint not in allowed_routes and 'user_id' not in session:
+        print(f"DEBUG: Endpoint: {request.endpoint}")
         flash('You need to log in first.', 'danger')
         return redirect(url_for('login'))
+
 
 bcrypt = Bcrypt(app)
 def hash_password(password):
@@ -155,9 +158,11 @@ def handle_video():
 def home():
     return render_template('index.html')
 
+# Change the route to query the VideoModel
 @app.route('/delete_video_form')
 def delete_video_form():
-    return render_template('delete_video.html')
+    videos = VideoModel.query.all()  # Query the main database
+    return render_template('delete_video.html', videos=videos)
 
 @app.route('/add_video_form')
 def add_video_form():
@@ -168,10 +173,12 @@ def all_videos():
     videos = VideoModel.query.all()
     return render_template('all_videos.html', videos=videos)
 
+# Change the route to query the DeletedVideoModel
 @app.route('/deleted_videos')
 def deleted_videos():
     videos = DeletedVideoModel.query.all()
     return render_template('deleted_videos.html', videos=videos)
+
 
 # Route to get all videos
 @app.route('/api/videos', methods=['GET'])

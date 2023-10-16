@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <title>Movie API Client</title>
-    <div id="deleteFeedback"></div>
+    <title>Delete Videos</title>
 </head>
 <body>
     <div class="container mt-5">
@@ -13,45 +11,75 @@
         <p>Click the link below to view all videos:</p>
         <a href="{{ url_for('all_videos') }}">All Videos</a>
         <h2>Remove Movie from DB</h2>
-        <form id="deleteMovieForm">
-            <div class="form-group">
-                <label for="name">ID:</label>
-                <input type="text" class="form-control" id="deleteID" required>
-            </div>
-            <button type="button" class="btn btn-danger" onclick="deleteMovie()">Delete Movie</button>
-        </form>
+        <div id="deleteFeedback"></div>
+
+        
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Views</th>
+                    <th>Likes</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for video in videos %}
+                    <tr data-id="{{ video.id }}">
+                        <td>{{ video.id }}</td>
+                        <td>{{ video.name }}</td>
+                        <td>{{ video.views }}</td>
+                        <td>{{ video.likes }}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteMovie({{ video.id }})">Delete</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            
+        </table>
     </div>
 
     <script>
-        function deleteMovie() {
-            const videoID = document.getElementById('deleteID').value;
-            const apiUrl = `/video/${videoID}`;
-            const deleteFeedbackElement = document.getElementById('deleteFeedback');
+        function deleteMovie(videoID) {
+    const apiUrl = `/video/${videoID}`;
+    const deleteFeedbackElement = document.getElementById('deleteFeedback');
 
-            fetch(apiUrl, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    throw new Error('Movie not found or other error');
-                }
-            })
-            .then(data => {
-                console.log('Success:', data);
-                // Display success message
-                deleteFeedbackElement.innerHTML = '<div class="alert alert-success" role="alert">Movie deleted successfully!</div>';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // Display error message
-                deleteFeedbackElement.innerHTML = '<div class="alert alert-danger" role="alert">Error deleting movie. Please check the ID and try again.</div>';
-            });
+    fetch(apiUrl, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            throw new Error('Movie not found or other error');
         }
+    })
+    .then(data => {
+        console.log('Success:', data);
+        // Display success message
+        deleteFeedbackElement.innerHTML = '<div class="alert alert-success" role="alert">Movie deleted successfully!</div>';
+        // Optionally, remove the deleted row from the table
+        const deletedRow = document.querySelector(`tr[data-id="${videoID}"]`);
+        if (deletedRow) {
+            deletedRow.remove();
+        }
+        // Reload the page after a short delay (e.g., 2 seconds)
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Display error message
+        deleteFeedbackElement.innerHTML = '<div class="alert alert-danger" role="alert">Error deleting movie. Please check the ID and try again.</div>';
+    });
+}
+
     </script>
 </body>
 </html>
