@@ -5,8 +5,7 @@ sudo docker-compose up
 sudo docker-compose down
 
 
-docker image prune --all
-docker system prune -af
+docker image prune --all && docker system prune -af
 
 
 #TO REBUILD ON SERVER

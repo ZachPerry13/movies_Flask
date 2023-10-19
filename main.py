@@ -4,9 +4,9 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 from flask_bcrypt import Bcrypt
 
-
 app = Flask(__name__)
 api = Api(app)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_BINDS'] = {'deleted_db': 'sqlite:///deleted_db.db'}
 app.secret_key = 'vfsdwef2ef2fsdFdFSSFSEFef22f23432432rdfsdfasefwef'
@@ -292,4 +292,4 @@ def login():
     return render_template('login.html')
 
 if __name__ == "__main__":
-	app.run(debug=True,host="0.0.0.0", port=5000)
+	app.run(host="0.0.0.0", port=443,ssl_context=('cert.pem','key.pem'), debug=True)

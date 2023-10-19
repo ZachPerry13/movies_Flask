@@ -1,0 +1,6 @@
+#Ignore database file
+*.sqlite
+*.db
+
+#Ignore certs
+*.pem
