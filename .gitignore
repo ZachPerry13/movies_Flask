@@ -1,6 +1,7 @@
 #Ignore database file
 *.sqlite
-*.db
+database.db
+deleted_db.db
 
 #Ignore certs
 *.pem

@@ -8,8 +8,12 @@ sudo docker-compose down
 docker image prune --all && docker system prune -af
 
 
-#TO REBUILD ON SERVER
+#TO REBUILD DEV ENV
 docker-compose down
 docker build -t myflaskapp .
 docker-compose up
 
+
+PROD
+docker build -t my-flask-app .
+docker run -it -p 443:443 my-flask-app
